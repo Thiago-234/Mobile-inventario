@@ -42,7 +42,7 @@ export default function Login() {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.btnEntrar}>
+                <TouchableOpacity style={styles.btnEntrar}  onPress={() => navigation.navigate('Home')}>
                     <Text style={styles.entrar}>Entrar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -58,6 +58,7 @@ export default function Login() {
 
 const styles = StyleSheet.create({
     container: {
+        marginTop: 30,
         width: "100%",
         height: "100%",
         justifyContent: "center",
