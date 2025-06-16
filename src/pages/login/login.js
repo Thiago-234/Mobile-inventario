@@ -1,17 +1,54 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/FontAwesome';  // Importando do FontAwesome
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from "expo-linear-gradient";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Login() {
     const [login, setLogin] = useState("");
     const [senha, setSenha] = useState("");
-    const navigation = useNavigation(); // Hook de navegação
+    const navigation = useNavigation();
+
+    const handleLogin = async () => {
+        try {
+            const resposta = await fetch(
+                "https://projeto-inventario-grdrgfgcgpd0cbgu.brazilsouth-01.azurewebsites.net/auth/login",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        login: login,
+                        senha: senha,
+                    }),
+                }
+            );
+
+            if (resposta.ok) {
+                const dados = await resposta.json();
+
+                const token = dados.token;
+                const username = dados.username || login; // depende da resposta da API
+
+                await AsyncStorage.setItem("token", token);
+                await AsyncStorage.setItem("username", username);
+
+                navigation.navigate("Home");
+            } else {
+                const erro = await resposta.text();
+                Alert.alert("Erro ao fazer login", erro || "Credenciais inválidas.");
+            }
+        } catch (erro) {
+            console.error("Erro de login:", erro);
+            Alert.alert("Erro de rede", "Não foi possível conectar ao servidor.");
+        }
+    };
 
     return (
         <LinearGradient
-            colors={['#ffffff', '#000000']}
+            colors={["#ffffff", "#000000"]}
             style={styles.container}
             start={{ x: 0, y: 1 }}
             end={{ x: 0, y: 0 }}
@@ -42,14 +79,15 @@ export default function Login() {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.btnEntrar}  onPress={() => navigation.navigate('Home')}>
+                <TouchableOpacity style={styles.btnEntrar} onPress={handleLogin}>
                     <Text style={styles.entrar}>Entrar</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                     style={styles.btnCadastrar}
-                    onPress={() => navigation.navigate('Cadastro')}
+                    onPress={() => navigation.navigate("Cadastro")}
                 >
-                    <Text style={styles.cadastrarTexto} onPress={() => navigation.navigate('Cadastro')}>Não possui conta? Cadastrar-se</Text>
+                    <Text style={styles.cadastrarTexto}>Não possui conta? Cadastrar-se</Text>
                 </TouchableOpacity>
             </View>
         </LinearGradient>

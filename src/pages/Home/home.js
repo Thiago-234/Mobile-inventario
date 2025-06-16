@@ -1,52 +1,65 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Header from "../../components/Header/header";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Home() {
-    const navigation = useNavigation(); //Hook de navegação
+    const [usuario, setUsuario] = useState("");
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        const carregarUsername = async () => {
+            try {
+                const username = await AsyncStorage.getItem("username");
+                if (username) {
+                    setUsuario(username);
+                }
+            } catch (erro) {
+                console.log("Erro ao carregar username:", erro);
+            }
+        };
+        carregarUsername();
+    }, []);
 
     return (
         <>
-            <View style={styles.container}>
-                <Header />
-
-                <View style={styles.main}>
-                    <Text style={styles.username}>Bem Vindo, (Username)!</Text>
-
-                    <View style={styles.cardNavegacao}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Produtos')}>
-                            <Text style={styles.cardTexto}>Ver Produtos 📦</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.cardNavegacao}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Depositos')}>
-                            <Text style={styles.cardTexto}>Ver Depósitos 🏭</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.cardNavegacao}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Movimentações')}>
-                            <Text style={styles.cardTexto}>Ver Movimentações 🔁</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.cardNavegacao}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Estoques')}>
-                            <Text style={styles.cardTexto}>Ver Estoque 🚚</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.cardNavegacao}>
-                        <TouchableOpacity>
-                            <Text style={styles.cardTexto}>Valor total 💰</Text>
-                        </TouchableOpacity>
-                    </View>
-
+        <View style={styles.container}>
+            <Header />
+            <View style={styles.main}>
+                <Text style={styles.username}>Bem Vindo, {usuario}!</Text>
+                <View style={styles.cardNavegacao}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Produtos')}>
+                        <Text style={styles.cardTexto}>Ver Produtos 📦</Text>
+                    </TouchableOpacity>
                 </View>
+
+                <View style={styles.cardNavegacao}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Depositos')}>
+                        <Text style={styles.cardTexto}>Ver Depósitos 🏭</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.cardNavegacao}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Movimentações')}>
+                        <Text style={styles.cardTexto}>Ver Movimentações 🔁</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.cardNavegacao}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Estoques')}>
+                        <Text style={styles.cardTexto}>Ver Estoque 🚚</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.cardNavegacao}>
+                    <TouchableOpacity>
+                        <Text style={styles.cardTexto}>Valor total 💰</Text>
+                    </TouchableOpacity>
+                </View>
+
             </View>
+        </View>
         </>
     );
 }
