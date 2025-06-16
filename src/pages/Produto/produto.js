@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Header from "../../components/Header/header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -23,14 +23,12 @@ export default function Produto() {
   const [medida, setMedida] = useState("");
   const [descricao, setDescricao] = useState("");
   const [produtos, setProdutos] = useState([]);
-  const [produtoSelecionado, setProdutoSelecionado] = useState(null); // para editar ou deletar
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
   const getToken = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      return token;
-    } catch (error) {
-      console.error("Erro ao recuperar token:", error);
+      return await AsyncStorage.getItem("token");
+    } catch {
       return null;
     }
   };
@@ -41,25 +39,22 @@ export default function Produto() {
       const resposta = await fetch(
         "https://projeto-inventario-grdrgfgcgpd0cbgu.brazilsouth-01.azurewebsites.net/produto/todos",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-      if (!resposta.ok) {
-        throw new Error("Erro ao buscar produtos");
-      }
+      if (!resposta.ok) throw new Error("Erro ao listar produtos");
       const dados = await resposta.json();
       setProdutos(dados);
     } catch (erro) {
-      console.error("Erro ao buscar produtos:", erro);
       Alert.alert("Erro", "Não foi possível carregar os produtos.");
     }
   }, []);
 
-  useEffect(() => {
-    listarProdutos();
-  }, [listarProdutos]);
+  useFocusEffect(
+    useCallback(() => {
+      listarProdutos();
+    }, [listarProdutos])
+  );
 
   const handleSalvar = async () => {
     if (!nome || !preco || !codigo) {
@@ -67,17 +62,9 @@ export default function Produto() {
       return;
     }
 
-    const novoProduto = {
-      nome,
-      preco,
-      codigo,
-      medida,
-      descricao,
-    };
-
+    const novoProduto = { nome, preco, codigo, medida, descricao };
     try {
       const token = await getToken();
-
       const resposta = await fetch(
         "https://projeto-inventario-grdrgfgcgpd0cbgu.brazilsouth-01.azurewebsites.net/produto/cadastrar",
         {
@@ -89,42 +76,21 @@ export default function Produto() {
           body: JSON.stringify(novoProduto),
         }
       );
-
-      if (!resposta.ok) {
-        const errorMsg = await resposta.text();
-        throw new Error(errorMsg || "Erro ao salvar produto");
-      }
-
+      if (!resposta.ok) throw new Error();
       setModalVisible(false);
       limparCampos();
       listarProdutos();
-    } catch (erro) {
-      console.error("Erro ao salvar produto:", erro);
+    } catch {
       Alert.alert("Erro", "Não foi possível salvar o produto.");
     }
   };
 
   const handleAtualizar = async () => {
-    if (!produtoSelecionado) {
-      Alert.alert("Erro", "Nenhum produto selecionado para atualizar.");
-      return;
-    }
-    if (!nome || !preco || !codigo) {
-      Alert.alert("Atenção", "Preencha os campos obrigatórios.");
-      return;
-    }
+    if (!produtoSelecionado) return;
 
-    const produtoAtualizado = {
-      nome,
-      preco,
-      codigo,
-      medida,
-      descricao,
-    };
-
+    const produtoAtualizado = { nome, preco, codigo, medida, descricao };
     try {
       const token = await getToken();
-
       const resposta = await fetch(
         `https://projeto-inventario-grdrgfgcgpd0cbgu.brazilsouth-01.azurewebsites.net/produto/atualizar/${produtoSelecionado.id}`,
         {
@@ -136,59 +102,14 @@ export default function Produto() {
           body: JSON.stringify(produtoAtualizado),
         }
       );
-
-      if (!resposta.ok) {
-        const errorMsg = await resposta.text();
-        throw new Error(errorMsg || "Erro ao atualizar produto");
-      }
-
+      if (!resposta.ok) throw new Error();
       setModalVisible(false);
       limparCampos();
       setProdutoSelecionado(null);
       listarProdutos();
-    } catch (erro) {
-      console.error("Erro ao atualizar produto:", erro);
+    } catch {
       Alert.alert("Erro", "Não foi possível atualizar o produto.");
     }
-  };
-
-  const handleDeletar = async (produto) => {
-    Alert.alert(
-      "Confirmação",
-      `Deseja realmente deletar o produto?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Deletar",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const token = await getToken();
-
-              const resposta = await fetch(
-                `https://projeto-inventario-grdrgfgcgpd0cbgu.brazilsouth-01.azurewebsites.net/produto/deletar/${produto.id}`,
-                {
-                  method: "DELETE",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-
-              if (!resposta.ok) {
-                const errorMsg = await resposta.text();
-                throw new Error(errorMsg || "Erro ao deletar produto");
-              }
-
-              listarProdutos();
-            } catch (erro) {
-              console.error("Erro ao deletar produto:", erro);
-              Alert.alert("Erro", "Não foi possível deletar o produto.");
-            }
-          },
-        },
-      ]
-    );
   };
 
   const abrirEdicao = (produto) => {
@@ -208,7 +129,6 @@ export default function Produto() {
     setMedida("");
     setDescricao("");
   };
-
   return (
     <>
       <Header />
@@ -222,6 +142,7 @@ export default function Produto() {
         >
           <Icon style={styles.iconVoltar} name="arrow-left" />
         </TouchableOpacity>
+
         <View style={styles.produtoHeader}>
           <Text style={styles.titulo}>Produtos</Text>
           <TouchableOpacity
@@ -238,7 +159,6 @@ export default function Produto() {
 
         <View style={styles.listaProdutos}>
           <Text style={styles.tituloLista}>Produtos Cadastrados</Text>
-
           {produtos.length === 0 ? (
             <Text style={styles.semItem}>Nenhum produto cadastrado.</Text>
           ) : (
@@ -253,7 +173,7 @@ export default function Produto() {
                   <TouchableOpacity onPress={() => abrirEdicao(produto)}>
                     <Icon name="edit" size={25} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDeletar(produto)}>
+                  <TouchableOpacity>
                     <Icon name="trash" size={25} color="#f00" />
                   </TouchableOpacity>
                 </View>
@@ -263,7 +183,6 @@ export default function Produto() {
         </View>
       </ScrollView>
 
-      {/* Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -311,24 +230,26 @@ export default function Produto() {
               value={descricao}
               onChangeText={setDescricao}
             />
-
-            <TouchableOpacity
-              style={styles.botaoSalvar}
-              onPress={produtoSelecionado ? handleAtualizar : handleSalvar}
-            >
-              <Text style={styles.salvarTexto}>
-                {produtoSelecionado ? "Atualizar" : "Salvar"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setModalVisible(false);
-                setProdutoSelecionado(null);
-                limparCampos();
-              }}
-            >
-              <Text style={styles.cancelarTexto}>Cancelar</Text>
-            </TouchableOpacity>
+            <View style={styles.botaoContainer}>
+              <TouchableOpacity
+                style={styles.botaoSalvar}
+                onPress={produtoSelecionado ? handleAtualizar : handleSalvar}
+              >
+                <Text style={styles.salvarTexto}>
+                  {produtoSelecionado ? "Atualizar" : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.botao}
+                onPress={() => {
+                  setModalVisible(false);
+                  limparCampos();
+                  setProdutoSelecionado(null);
+                }}
+              >
+                <Text style={styles.cancelarTexto}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
